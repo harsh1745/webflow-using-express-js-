@@ -28,6 +28,44 @@ app.get('/', (req, res) => {
 // ======================
 // Submit Form → Airtable
 // ======================
+// app.post('/api/submit-form', async (req, res) => {
+//   try {
+//     const { name, email, phone, message } = req.body;
+
+//     if (!name || !email) {
+//       return res.json({
+//         success: false,
+//         error: "Name and Email required"
+//       });
+//     }
+
+//     await base(TABLE).create([
+//       {
+//         fields: {
+//           Name: name,
+//           Email: email,
+//           Phone: phone || '',
+//           Message: message || ''
+//         }
+//       }
+//     ]);
+
+//     res.json({
+//       success: true,
+//       message: "Saved to Airtable"
+//     });
+
+//   } catch (error) {
+//     console.error(error);
+//     res.json({
+//       success: false,
+//       error: "Airtable save failed"
+//     });
+//   }
+// });
+// ======================
+// Submit Form → Airtable (No Duplicate Email)
+// ======================
 app.post('/api/submit-form', async (req, res) => {
   try {
     const { name, email, phone, message } = req.body;
@@ -39,6 +77,30 @@ app.post('/api/submit-form', async (req, res) => {
       });
     }
 
+    // ======================
+    // Check Duplicate Email
+    // ======================
+    const existingRecords = [];
+
+    await base(TABLE)
+      .select({
+        filterByFormula: `{Email} = "${email}"`
+      })
+      .eachPage(function page(records, fetchNextPage) {
+        records.forEach(record => existingRecords.push(record));
+        fetchNextPage();
+      });
+
+    if (existingRecords.length > 0) {
+      return res.json({
+        success: false,
+        error: "Email already exists"
+      });
+    }
+
+    // ======================
+    // Create Record
+    // ======================
     await base(TABLE).create([
       {
         fields: {
@@ -56,13 +118,14 @@ app.post('/api/submit-form', async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("Airtable Error:", error);
     res.json({
       success: false,
       error: "Airtable save failed"
     });
   }
 });
+
 
 // ======================
 // Get Data from Airtable
