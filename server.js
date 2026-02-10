@@ -157,5 +157,5 @@ app.get('/api/get-submissions', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`� Ngrok Endpoint: https://maddie-deficient-venus.ngrok-free.dev/api/submit-form`);
+  
 });
