@@ -7,9 +7,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST'],
-    credentials: true
+  origin: '*',
+  methods: ['GET', 'POST'],
+  credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -19,20 +19,20 @@ const COLLECTION_ID = process.env.COLLECTION_ID;
 const WEBFLOW_API_BASE = 'https://api.webflow.com/v2';
 
 app.get('/', (req, res) => {
-    res.json({
-        status: 'Server is running',
-        message: 'Webflow Form API is active'
-    });
+  res.json({
+    status: 'Server is running',
+    message: 'Webflow Form API is active'
+  });
 });
 
 app.post('/api/submit-form', async (req, res) => {
-    try {
-        console.log('Form data received:', req.body);
+  try {
+    console.log('Form data received:', req.body);
 
-        const { name, email, phone, message } = req.body;
+    const { name, email, phone, message } = req.body;
 
-        if (!name || !email) {
-            return res.status(400).send(`
+    if (!name || !email) {
+      return res.status(400).send(`
         <html>
           <body>
             <h2>Error: Name and Email are required</h2>
@@ -40,33 +40,33 @@ app.post('/api/submit-form', async (req, res) => {
           </body>
         </html>
       `);
+    }
+
+    const response = await axios.post(
+      `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items`,
+      {
+        isArchived: false,
+        isDraft: false,
+        fieldData: {
+          name: name,
+          slug: `lead-${Date.now()}`,
+          email: email,
+          phone: phone || '',
+          message: message || ''
         }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${WEBFLOW_TOKEN}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json'
+        }
+      }
+    );
 
-        const response = await axios.post(
-            `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items`,
-            {
-                isArchived: false,
-                isDraft: false,
-                fieldData: {
-                    name: name,
-                    slug: `lead-${Date.now()}`,
-                    email: email,
-                    phone: phone || '',
-                    message: message || ''
-                }
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${WEBFLOW_TOKEN}`,
-                    'Content-Type': 'application/json',
-                    'accept': 'application/json'
-                }
-            }
-        );
+    console.log('Webflow API Response:', response.data);
 
-        console.log('Webflow API Response:', response.data);
-
-        res.send(`
+    res.send(`
       <html>
         <head>
           <style>
@@ -114,9 +114,9 @@ app.post('/api/submit-form', async (req, res) => {
       </html>
     `);
 
-    } catch (error) {
-        console.error('Error:', error.response?.data || error.message);
-        res.status(500).send(`
+  } catch (error) {
+    console.error('Error:', error.response?.data || error.message);
+    res.status(500).send(`
       <html>
         <body>
           <h2>❌ Error submitting form</h2>
@@ -125,37 +125,37 @@ app.post('/api/submit-form', async (req, res) => {
         </body>
       </html>
     `);
-    }
+  }
 });
 
 app.get('/api/get-submissions', async (req, res) => {
-    try {
-        const response = await axios.get(
-            `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${WEBFLOW_TOKEN}`,
-                    'accept': 'application/json'
-                }
-            }
-        );
+  try {
+    const response = await axios.get(
+      `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items`,
+      {
+        headers: {
+          'Authorization': `Bearer ${WEBFLOW_TOKEN}`,
+          'accept': 'application/json'
+        }
+      }
+    );
 
-        res.json({
-            success: true,
-            data: response.data.items || [],
-            total: response.data.items?.length || 0
-        });
+    res.json({
+      success: true,
+      data: response.data.items || [],
+      total: response.data.items?.length || 0
+    });
 
-    } catch (error) {
-        console.error('Error:', error.response?.data || error.message);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch submissions'
-        });
-    }
+  } catch (error) {
+    console.error('Error:', error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch submissions'
+    });
+  }
 });
 
 app.listen(PORT, () => {
-    console.log(`✅ Server running on http://localhost:${PORT}`);
-    console.log(`📝 Form endpoint: http://localhost:${PORT}/api/submit-form`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`� Ngrok Endpoint: https://maddie-deficient-venus.ngrok-free.dev/api/submit-form`);
 });
