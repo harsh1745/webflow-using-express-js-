@@ -1,111 +1,106 @@
 const express = require('express');
-const axios = require('axios');
 const cors = require('cors');
+const Airtable = require('airtable');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST'],
-}));
+app.use(cors({ origin: '*', methods: ['GET', 'POST'] }));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-const WEBFLOW_TOKEN = process.env.WEBFLOW_TOKEN;
-const COLLECTION_ID = process.env.COLLECTION_ID;
-const WEBFLOW_API_BASE = 'https://api.webflow.com/v2';
-
-app.get('/', (req, res) => {
-  res.json({
-    status: 'Server is running',
-  });
-});
-
 
 // ======================
-// Submit Form API
+// Airtable Config
+// ======================
+const base = new Airtable({
+  apiKey: process.env.AIRTABLE_TOKEN
+}).base(process.env.AIRTABLE_BASE_ID);
+
+const TABLE = process.env.AIRTABLE_TABLE_NAME;
+
+// ======================
+// Health Check
+// ======================
+app.get('/', (req, res) => {
+  res.json({ status: 'Server running with Airtable' });
+});
+
+// ======================
+// Submit Form → Airtable
 // ======================
 app.post('/api/submit-form', async (req, res) => {
   try {
     const { name, email, phone, message } = req.body;
 
     if (!name || !email) {
-      return res.status(400).json({
+      return res.json({
         success: false,
-        error: "Name and Email are required"
+        error: "Name and Email required"
       });
     }
 
-    const response = await axios.post(
-      `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items`,
+    await base(TABLE).create([
       {
-        isArchived: false,
-        isDraft: false,
-        fieldData: {
-          name: name,
-          slug: `lead-${Date.now()}`,
-          email: email,
-          phone: phone || '',
-          message: message || ''
-        }
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${WEBFLOW_TOKEN}`,
-          'Content-Type': 'application/json',
-          accept: 'application/json'
+        fields: {
+          Name: name,
+          Email: email,
+          Phone: phone || '',
+          Message: message || ''
         }
       }
-    );
+    ]);
 
     res.json({
       success: true,
-      message: "Form submitted successfully",
-      item: response.data
+      message: "Saved to Airtable"
     });
 
   } catch (error) {
-  const wfError = error.response?.data || error.message;
-
-  console.error("Webflow Error:", wfError);
-
-  res.status(500).json({
-    success: false,
-    error: wfError.message || JSON.stringify(wfError)
-  });
-}
+    console.error(error);
+    res.json({
+      success: false,
+      error: "Airtable save failed"
+    });
+  }
 });
 
-
 // ======================
-// Get Submissions API
+// Get Data from Airtable
 // ======================
 app.get('/api/get-submissions', async (req, res) => {
   try {
-    const response = await axios.get(
-      `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items`,
-      {
-        headers: {
-          Authorization: `Bearer ${WEBFLOW_TOKEN}`,
-          accept: 'application/json'
-        }
-      }
-    );
+    const records = [];
+
+    await base(TABLE)
+      .select({ sort: [{ field: "Created", direction: "desc" }] })
+      .eachPage(function page(recordsPage, fetchNextPage) {
+        recordsPage.forEach(record => {
+          records.push({
+            id: record.id,
+            fieldData: {
+              name: record.get('Name'),
+              email: record.get('Email'),
+              phone: record.get('Phone'),
+              message: record.get('Message')
+            },
+            createdOn: record._rawJson.createdTime
+          });
+        });
+
+        fetchNextPage();
+      });
 
     res.json({
       success: true,
-      data: response.data.items || [],
-      total: response.data.items?.length || 0
+      data: records,
+      total: records.length
     });
 
   } catch (error) {
-    console.error(error.response?.data || error.message);
-
-    res.status(500).json({
+    console.error(error);
+    res.json({
       success: false,
-      error: "Failed to fetch submissions"
+      error: "Failed to fetch Airtable data"
     });
   }
 });
@@ -113,4 +108,3 @@ app.get('/api/get-submissions', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-  
