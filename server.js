@@ -23,6 +23,7 @@ app.get('/', (req, res) => {
   });
 });
 
+
 // ======================
 // Submit Form API
 // ======================
@@ -33,47 +34,11 @@ app.post('/api/submit-form', async (req, res) => {
     if (!name || !email) {
       return res.status(400).json({
         success: false,
-        error: "Name and Email required"
+        error: "Name and Email are required"
       });
     }
 
-// ======================
-// Check Duplicate Email
-// ======================
-let existingEmails = [];
-
-try {
-  const existingResponse = await axios.get(
-    `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items?limit=100`,
-    {
-      headers: {
-        Authorization: `Bearer ${WEBFLOW_TOKEN}`,
-        accept: 'application/json'
-      }
-    }
-  );
-
-  if (existingResponse.data.items) {
-    existingEmails = existingResponse.data.items.map(item =>
-      item.fieldData.email?.toLowerCase()
-    );
-  }
-} catch (err) {
-  console.error("Error fetching existing emails:", err.response?.data || err.message);
-}
-
-if (existingEmails.includes(email.toLowerCase())) {
-  return res.json({
-    success: false,
-    error: "Email already exists"
-  });
-}
-
-
-    // ======================
-    // Create New Item
-    // ======================
-    await axios.post(
+    const response = await axios.post(
       `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items`,
       {
         isArchived: false,
@@ -97,7 +62,8 @@ if (existingEmails.includes(email.toLowerCase())) {
 
     res.json({
       success: true,
-      message: "Form submitted successfully"
+      message: "Form submitted successfully",
+      item: response.data
     });
 
   } catch (error) {
@@ -145,3 +111,4 @@ app.get('/api/get-submissions', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+  
