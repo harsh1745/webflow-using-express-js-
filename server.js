@@ -23,7 +23,6 @@ app.get('/', (req, res) => {
   });
 });
 
-
 // ======================
 // Submit Form API
 // ======================
@@ -38,6 +37,33 @@ app.post('/api/submit-form', async (req, res) => {
       });
     }
 
+    // ======================
+    // Check Duplicate Email
+    // ======================
+    const existingResponse = await axios.get(
+      `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items`,
+      {
+        headers: {
+          Authorization: `Bearer ${WEBFLOW_TOKEN}`,
+          accept: 'application/json'
+        }
+      }
+    );
+
+    const existingEmails = existingResponse.data.items.map(item =>
+      item.fieldData.email?.toLowerCase()
+    );
+
+    if (existingEmails.includes(email.toLowerCase())) {
+      return res.json({
+        success: false,
+        error: "Email already exists"
+      });
+    }
+
+    // ======================
+    // Create New Item
+    // ======================
     await axios.post(
       `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items`,
       {
@@ -60,9 +86,9 @@ app.post('/api/submit-form', async (req, res) => {
       }
     );
 
-    // IMPORTANT
     res.json({
-      success: true
+      success: true,
+      message: "Form submitted successfully"
     });
 
   } catch (error) {
@@ -74,7 +100,6 @@ app.post('/api/submit-form', async (req, res) => {
     });
   }
 });
-
 
 
 // ======================
