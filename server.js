@@ -37,29 +37,38 @@ app.post('/api/submit-form', async (req, res) => {
       });
     }
 
-    // ======================
-    // Check Duplicate Email
-    // ======================
-    const existingResponse = await axios.get(
-      `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items`,
-      {
-        headers: {
-          Authorization: `Bearer ${WEBFLOW_TOKEN}`,
-          accept: 'application/json'
-        }
-      }
-    );
+// ======================
+// Check Duplicate Email
+// ======================
+let existingEmails = [];
 
-    const existingEmails = existingResponse.data.items.map(item =>
+try {
+  const existingResponse = await axios.get(
+    `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items?limit=100`,
+    {
+      headers: {
+        Authorization: `Bearer ${WEBFLOW_TOKEN}`,
+        accept: 'application/json'
+      }
+    }
+  );
+
+  if (existingResponse.data.items) {
+    existingEmails = existingResponse.data.items.map(item =>
       item.fieldData.email?.toLowerCase()
     );
+  }
+} catch (err) {
+  console.error("Error fetching existing emails:", err.response?.data || err.message);
+}
 
-    if (existingEmails.includes(email.toLowerCase())) {
-      return res.json({
-        success: false,
-        error: "Email already exists"
-      });
-    }
+if (existingEmails.includes(email.toLowerCase())) {
+  return res.json({
+    success: false,
+    error: "Email already exists"
+  });
+}
+
 
     // ======================
     // Create New Item
