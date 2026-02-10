@@ -67,13 +67,15 @@ app.post('/api/submit-form', async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error.response?.data || error.message);
+  const wfError = error.response?.data || error.message;
 
-    res.status(500).json({
-      success: false,
-      error: "Submission failed"
-    });
-  }
+  console.error("Webflow Error:", wfError);
+
+  res.status(500).json({
+    success: false,
+    error: wfError.message || JSON.stringify(wfError)
+  });
+}
 });
 
 
