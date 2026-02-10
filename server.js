@@ -101,13 +101,14 @@ if (existingEmails.includes(email.toLowerCase())) {
     });
 
   } catch (error) {
-    console.error(error.response?.data || error.message);
+  console.error("Webflow Error:", error.response?.data || error.message);
 
-    res.status(500).json({
-      success: false,
-      error: "Submission failed"
-    });
-  }
+  res.status(500).json({
+    success: false,
+    error: error.response?.data?.message || "Submission failed"
+  });
+}
+
 });
 
 
