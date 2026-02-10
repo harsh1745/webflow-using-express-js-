@@ -34,11 +34,11 @@ app.post('/api/submit-form', async (req, res) => {
     if (!name || !email) {
       return res.status(400).json({
         success: false,
-        error: "Name and Email are required"
+        error: "Name and Email required"
       });
     }
 
-    const response = await axios.post(
+    await axios.post(
       `${WEBFLOW_API_BASE}/collections/${COLLECTION_ID}/items`,
       {
         isArchived: false,
@@ -60,10 +60,9 @@ app.post('/api/submit-form', async (req, res) => {
       }
     );
 
+    // IMPORTANT
     res.json({
-      success: true,
-      message: "Form submitted successfully",
-      item: response.data
+      success: true
     });
 
   } catch (error) {
@@ -75,6 +74,7 @@ app.post('/api/submit-form', async (req, res) => {
     });
   }
 });
+
 
 
 // ======================
