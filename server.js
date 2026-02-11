@@ -201,7 +201,25 @@ app.post('/api/update-record', async (req, res) => {
   }
 });
 
+// ======================
+// Delete Record (Add this below Update Record)
+// ======================
+app.post('/api/delete-record', async (req, res) => {
+  try {
+    const { id } = req.body;
 
+    if (!id) {
+      return res.json({ success: false, error: "Record ID missing" });
+    }
+
+    await base(TABLE).destroy([id]);
+
+    res.json({ success: true, message: "Record deleted successfully" });
+  } catch (error) {
+    console.error("Delete Error:", error);
+    res.json({ success: false, error: "Delete failed" });
+  }
+});
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
